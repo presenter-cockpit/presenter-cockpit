@@ -1,9 +1,13 @@
+<p align="center"><img src="https://presenter-cockpit.github.io/assets/img/logo.svg" alt="" width="96" height="96"></p>
+
 # Presenter Cockpit
 
 Free and open source Android app for tablets with a pen. It shows your PDF slides on a projector or an
 external screen, and you write on them, point with a laser and keep your notes on the tablet.
 
-Website: https://presenter-cockpit.github.io/
+![The tablet with tools, timer and the screens menu, and the external screen with only the slide and the ink](https://presenter-cockpit.github.io/assets/screens/dual.webp)
+
+Website, with more screenshots: https://presenter-cockpit.github.io/
 
 ## What it does
 
