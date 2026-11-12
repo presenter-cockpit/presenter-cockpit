@@ -15,14 +15,14 @@ android {
         // API 29: minimum for the low-latency rendering (front buffer) of Jetpack Ink.
         minSdk = 29
         targetSdk = 36
-        versionCode = 235
-        versionName = "0.8.0"
+        versionCode = 236
+        versionName = "0.8.1"
     }
 
     // The release keys live outside the repository; tools/release.sh passes them in environment variables.
     // "release" signs full and fdroid (the APK published on GitHub). "upload" signs the store bundle sent to
-    // Play, and Play signs it again with its own key. Without these variables, release builds use the debug
-    // key, for tests on the tablet.
+    // Play, and Play signs it again with its own key. Without these variables, the full and store release
+    // builds use the debug key, for tests on the tablet.
     val keys = listOf("release" to "PC_RELEASE", "upload" to "PC_UPLOAD").mapNotNull { (name, env) ->
         val store = System.getenv("${env}_KEYSTORE") ?: return@mapNotNull null
         signingConfigs.create(name) {
@@ -97,7 +97,9 @@ android {
         }
         create("fdroid") {
             dimension = "distribution"
-            signingConfig = key("release")
+            // F-Droid builds this flavor without our keys and signs it with its own, so it expects an
+            // unsigned APK: here there is no fallback to the debug key.
+            signingConfig = keys["release"]
             applicationIdSuffix = ".fdroid"
             buildConfigField("boolean", "ALL_FILES_ACCESS", "true")
             buildConfigField("String", "DISTRIBUTION", "\"fdroid\"")

@@ -1,0 +1,35 @@
+<p>Presenter Cockpit trasforma un tablet con penna nel posto da cui presentare. Collega un proiettore o uno schermo esterno: il pubblico vede la slide, l'inchiostro e il laser, mentre sul tablet hai anche gli strumenti, le note e il tempo che resta.</p>
+
+<p><b>Sulle slide</b></p>
+<ul>
+<li>Inchiostro veloce e sensibile alla pressione, evidenziatore e inchiostro che svanisce da solo</li>
+<li>Puntatore laser che compare appena la penna si avvicina</li>
+<li>Le forme disegnate a mano diventano linee, frecce, rettangoli ed ellissi precisi</li>
+<li>Caselle di testo, anche con un carattere scritto a mano</li>
+<li>Annotazioni salvate dentro il PDF, ancora modificabili quando lo riapri</li>
+</ul>
+
+<p><b>Fatto per LaTeX Beamer e PDFPC</b></p>
+<ul>
+<li>Gli overlay sono raggruppati in slide: scorri per la slide successiva, tocca per il passo successivo</li>
+<li>Note di PDFPC in Markdown, che puoi anche modificare sul tablet</li>
+<li>Slide nascoste e segnalibri, salvati con il PDF</li>
+</ul>
+
+<p><b>Davanti al pubblico</b></p>
+<ul>
+<li>Proiettore, monitor, schermo wireless e una finestra per le videochiamate</li>
+<li>Congela lo schermo, pausa, evidenzia una zona, colori invertiti</li>
+<li>Un timer che diventa giallo, arancione e poi rosso</li>
+<li>Telecomandi per presentazioni e scorciatoie da tastiera, come in PDFPC</li>
+</ul>
+
+<p><b>Oltre le slide</b></p>
+<ul>
+<li>Schede di codice e terminali, sul tablet o su un server via SSH</li>
+<li>Pagine web aperte dai link del PDF</li>
+<li>Panoramica per spostare, nascondere o eliminare slide, e lavagne per gli schizzi veloci</li>
+<li>Spazi di lavoro: i PDF, il codice e i terminali di ogni intervento, di nuovo aperti con un tocco</li>
+</ul>
+
+<p>Niente account, pubblicità o tracciamento. Questa versione per F-Droid contiene solo software libero, quindi non trasforma la scrittura a mano in testo: quella funzione richiede Google ML Kit ed è solo nella versione su GitHub e su Google Play.</p>

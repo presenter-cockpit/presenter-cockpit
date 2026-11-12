@@ -1,0 +1,35 @@
+<p>Presenter Cockpit turns a tablet with a pen into the place you present from. Connect a projector or an external screen: the audience sees the slide, your ink and the laser, while the tablet also shows your tools, your notes and the time left.</p>
+
+<p><b>On the slides</b></p>
+<ul>
+<li>Fast ink with pressure, highlighter and ink that fades by itself</li>
+<li>Laser pointer that appears as soon as the pen comes close</li>
+<li>Rough shapes become clean lines, arrows, rectangles and ellipses</li>
+<li>Text boxes, also in a handwritten font</li>
+<li>Annotations saved inside the PDF, still editable when you open it again</li>
+</ul>
+
+<p><b>Made for LaTeX Beamer and PDFPC</b></p>
+<ul>
+<li>Overlays grouped into slides: swipe for the next slide, tap for the next step</li>
+<li>PDFPC notes with Markdown, which you can also edit on the tablet</li>
+<li>Hidden slides and bookmarks, saved with the PDF</li>
+</ul>
+
+<p><b>In front of the audience</b></p>
+<ul>
+<li>Projector, monitor, wireless display and a window for video calls</li>
+<li>Freeze the screen, pause, spotlight, inverted colors</li>
+<li>A timer that turns yellow, orange, then red</li>
+<li>Presentation remotes and keyboard shortcuts, as in PDFPC</li>
+</ul>
+
+<p><b>More than slides</b></p>
+<ul>
+<li>Code tabs and terminals, on the tablet or on a server over SSH</li>
+<li>Web pages opened from the links in your PDF</li>
+<li>Overview to move, hide or delete slides, and whiteboards for quick sketches</li>
+<li>Workspaces: the PDFs, code and terminals of each talk, back in one tap</li>
+</ul>
+
+<p>No account, no ads, no tracking. This F-Droid version contains only free software, so it does not turn handwriting into text: that feature needs Google ML Kit and is only in the version on GitHub and Google Play.</p>
