@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icon: presentation screen with the terminal prompt ">_", a pen stroke and a PDF sheet.
+  Foreground layer of the adaptive icon (108 dp, always visible area: the central 72 dp); the
+  content is scaled to 90% around the center to leave room for the mask.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.9"
+        android:scaleY="0.9">
+        <!-- Screen and stand -->
+        <path
+            android:fillColor="#FFECEFF1"
+            android:pathData="M31,32h46a5,5 0,0 1,5 5v28a5,5 0,0 1,-5 5H31a5,5 0,0 1,-5 -5V37a5,5 0,0 1,5 -5z" />
+        <path
+            android:fillColor="#FF90A4AE"
+            android:pathData="M48,70h12v4h-12z M43.5,74h21a1.5,1.5 0,0 1,0 3h-21a1.5,1.5 0,0 1,0 -3z" />
+        <!-- Prompt ">_" -->
+        <path
+            android:pathData="M32,39l5,4.5 -5,4.5 M40,48h7"
+            android:strokeColor="#FF00897B"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- Pen stroke -->
+        <path
+            android:pathData="M33,62c4,-8 8,-8 10,-3.5s6,4.5 15,-8"
+            android:strokeColor="#FFE53935"
+            android:strokeWidth="3.4"
+            android:strokeLineCap="round" />
+        <!-- PDF sheet with the folded corner -->
+        <path
+            android:fillColor="#FFE53935"
+            android:pathData="M64,46h11l6,6v18a3,3 0,0 1,-3 3H64a3,3 0,0 1,-3 -3V49a3,3 0,0 1,3 -3z" />
+        <path
+            android:fillColor="#FFFFCDD2"
+            android:pathData="M75,46v4a2,2 0,0 0,2 2h4z" />
+        <group
+            android:translateX="63.2"
+            android:translateY="58"
+            android:scaleX="0.7"
+            android:scaleY="0.7">
+            <path
+                android:pathData="M0,9V0h3.2a2.4,2.4 0,0 1,0 4.8H0 M7.2,0v9h2.3a3.6,3.6 0,0 0,3.6 -3.6V3.6A3.6,3.6 0,0 0,9.5 0z M16.6,9V0h4.6 M16.6,4.4h3.8"
+                android:strokeColor="#FFFFFFFF"
+                android:strokeWidth="1.7"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round" />
+        </group>
+    </group>
+</vector>

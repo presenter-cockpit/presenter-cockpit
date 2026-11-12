@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "store" distribution: same drawing, light gray background (the usual one has the dark gray #263238). -->
+<resources>
+    <color name="ic_launcher_background">#FFB0BEC5</color>
+</resources>

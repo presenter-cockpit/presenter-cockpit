@@ -1,0 +1,75 @@
+% Test sample: a small Beamer talk with invented text (talk.pdf, notes in talk.pdfpc).
+% It has what the tests need: slides with overlays (same page label), section start pages that Beamer
+% labels like the slide before them (noframenumbering), notes only on the first overlay of a slide.
+% Rebuild: pdflatex talk.tex (twice); talk.pdfpc is written by hand in PDFPC's JSON format.
+\documentclass[aspectratio=169]{beamer}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+\AtBeginSection[]{\begin{frame}[noframenumbering]\centering\Large\insertsection\end{frame}}
+\title{A vegetable garden on the balcony}
+\author{Sample Speaker}
+\date{}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{About this talk}
+  Small pots, little sun and a few minutes a day are enough for a good harvest.
+\end{frame}
+
+\begin{frame}{Plan}
+  \begin{itemize}
+    \item Choosing the pots and the soil
+    \item Sowing and watering
+    \item Harvest and storage
+  \end{itemize}
+\end{frame}
+
+\section{Pots and soil}
+
+\begin{frame}{Pots}
+  \begin{itemize}
+    \item<1-> Terracotta keeps the roots cool in summer
+    \item<2-> Plastic is light and holds the water longer
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Soil}
+  \begin{itemize}
+    \item<1-> Universal soil mixed with some sand
+    \item<2-> A layer of gravel at the bottom for drainage
+    \item<3-> Compost once a month from spring to autumn
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Light}
+  Tomatoes and peppers want six hours of direct sun; lettuce and herbs grow in half shade.
+\end{frame}
+
+\section{Sowing and watering}
+
+\begin{frame}{Sowing calendar}
+  \begin{itemize}
+    \item<1-> Basil and tomatoes in April, indoors
+    \item<2-> Lettuce from March to September, every three weeks
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Watering}
+  Water early in the morning, at the foot of the plant, never on the leaves.
+\end{frame}
+
+\section{Harvest}
+
+\begin{frame}{Harvest}
+  Pick often: many plants produce more when the fruits are taken young.
+\end{frame}
+
+\begin{frame}{Questions}
+  Thank you!
+\end{frame}
+
+\end{document}

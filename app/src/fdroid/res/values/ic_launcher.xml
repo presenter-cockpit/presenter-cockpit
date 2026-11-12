@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "fdroid" distribution: same drawing, light blue background (the usual one has the dark gray #263238). -->
+<resources>
+    <color name="ic_launcher_background">#FFB3E5FC</color>
+</resources>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- File access: needed to browse folders, find the .pdfpc file next to the PDF and save the
+         annotations by overwriting the original file. -->
+    <!-- SSH and browser tabs, and reconnection when the network comes back (declared here, not only by the libraries). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Android 15+: to tell when the participants of a video call see the tablet instead of the slides. -->
+    <uses-permission android:name="android.permission.DETECT_SCREEN_RECORDING" />
+    <!-- Do not disturb while an external display is connected, if the user accepts the offer. -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
+    <application
+        android:name=".PresenterApp"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:largeHeap="true"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Presenter">
+
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_launcher_name"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|density|uiMode|locale|layoutDirection"
+            android:exported="true"
+            android:resizeableActivity="true"
+            android:windowSoftInputMode="adjustNothing">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Opening a PDF from another app (file manager, "Open with"). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity>
+        <!-- Window to share in a video call as "one app": a task of its own (other affinity). -->
+        <activity
+            android:name=".projector.AudienceActivity"
+            android:label="@string/share_window_name"
+            android:taskAffinity="${applicationId}.audience"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|density|uiMode|locale|layoutDirection"
+            android:exported="false"
+            android:resizeableActivity="true" />
+    </application>
+</manifest>

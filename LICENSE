@@ -1,0 +1,29 @@
+Presenter Cockpit
+Copyright (C) 2026 Mario Di Raimondo
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation, version 3 of the License only.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License along with this program (file
+COPYING). If not, see <https://www.gnu.org/licenses/>.
+
+
+Additional permission under GNU GPL version 3 section 7
+
+If you modify this Program, or any covered work, by linking or combining it with Google ML Kit (the
+"com.google.mlkit" libraries) and the Google libraries it depends on, such as Google Play services and
+Firebase (or a modified version of those libraries), containing parts covered by the terms of the
+ML Kit Terms of Service or other Google terms, the licensors of this Program grant you additional
+permission to convey the resulting work. Corresponding Source for a non-source form of such a
+combination shall not include the source code for the parts of those libraries used as well as that of
+the covered work.
+
+The "fdroid" build of this Program does not include those libraries and does not need this permission.
+
+
+Third-party components included in the app keep their own licenses: the list and their texts are in
+the app, in Settings > About > Open source licenses.
