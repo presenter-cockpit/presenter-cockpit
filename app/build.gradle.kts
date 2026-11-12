@@ -15,8 +15,8 @@ android {
         // API 29: minimum for the low-latency rendering (front buffer) of Jetpack Ink.
         minSdk = 29
         targetSdk = 36
-        versionCode = 236
-        versionName = "0.8.1"
+        versionCode = 237
+        versionName = "0.8.2"
     }
 
     // The release keys live outside the repository; tools/release.sh passes them in environment variables.
@@ -119,8 +119,12 @@ android {
     }
 }
 
+// Bytecode for Java 17 with whatever JDK runs Gradle (17 here, 21 on the F-Droid build server). A toolchain
+// would require exactly JDK 17 to be installed, and the F-Droid server does not have it.
 kotlin {
-    jvmToolchain(17)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 // No Compose mapping file in release builds: the task that writes it reads every class of the
