@@ -137,9 +137,22 @@ composeCompiler {
 // App name (app_name) and short name under the icon (app_launcher_name), per variant: debug builds
 // end with "*", the debug store and F-Droid ones (only for tests on the tablet, NEVER published) also have
 // a superscript "s" or "f". This way the variants can be told apart on the tablet.
+// Commit of the sources, for the version of debug builds: "916a837", or "916a837-dirty" with uncommitted
+// changes. Empty when git is not available.
+val gitCommit: String = runCatching {
+    providers.exec {
+        commandLine("git", "describe", "--always", "--dirty", "--abbrev=7", "--exclude", "*")
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("")
+
 androidComponents {
     onVariants { variant ->
         val debug = variant.buildType == "debug"
+        // The version changes only for a release. Debug builds also carry their commit ("0.8.3-dev+916a837"),
+        // so Settings → About tells which build is on the tablet.
+        if (debug && gitCommit.isNotEmpty()) {
+            variant.outputs.forEach { output -> output.versionName.set("${output.versionName.get()}-dev+$gitCommit") }
+        }
         val flavorMark = mapOf("store" to "ˢ", "fdroid" to "ᶠ")[variant.flavorName].orEmpty()
         val mark = if (debug) "$flavorMark*" else ""
         for ((key, name) in listOf("app_name" to "Presenter Cockpit", "app_launcher_name" to "Cockpit")) {
