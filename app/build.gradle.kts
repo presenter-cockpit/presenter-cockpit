@@ -112,6 +112,14 @@ android {
         for (flavor in listOf("full", "store")) getByName(flavor).kotlin.directories.add("src/mlkit/java")
     }
 
+    // The Android Gradle plugin adds to signed APKs a list of the dependencies encrypted with a Google key,
+    // which only Google can read. Leave it out of the APK published on GitHub; keep it in the bundle, where
+    // Play uses it to warn about libraries with known problems.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
+
     // Only the app's languages: the libraries (Compose, Material) bring dozens, and in a language
     // without a translation the texts would be mixed (app in English, system components in that language).
     androidResources {
