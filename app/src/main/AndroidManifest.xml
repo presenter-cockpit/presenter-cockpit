@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- File access: needed to browse folders, find the .pdfpc file next to the PDF and save the
          annotations by overwriting the original file. -->
@@ -10,6 +11,9 @@
     <uses-permission android:name="android.permission.DETECT_SCREEN_RECORDING" />
     <!-- Do not disturb while an external display is connected, if the user accepts the offer. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <!-- androidx.biometric also asks for the old fingerprint permission, used only before Android 9: the app
+         starts at Android 10 and needs only USE_BIOMETRIC, so it is left out. -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" tools:node="remove" />
 
     <application
         android:name=".PresenterApp"
