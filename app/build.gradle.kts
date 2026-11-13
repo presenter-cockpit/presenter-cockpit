@@ -15,8 +15,8 @@ android {
         // API 29: minimum for the low-latency rendering (front buffer) of Jetpack Ink.
         minSdk = 29
         targetSdk = 36
-        versionCode = 237
-        versionName = "0.8.2"
+        versionCode = 238
+        versionName = "0.8.3"
     }
 
     // The release keys live outside the repository; tools/release.sh passes them in environment variables.
