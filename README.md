@@ -48,6 +48,6 @@ Mario Di Raimondo. The code is written with the help of AI, starting from the au
 
 ## License
 
-GPL version 3 only, with an additional permission to combine the app with Google ML Kit (see
-[LICENSE](LICENSE) and [COPYING](COPYING)). The `fdroid` flavor does not include ML Kit. Third-party
+GPL version 3 only ([LICENSE](LICENSE)), with an additional permission to combine the app with Google
+ML Kit ([NOTICE](NOTICE)). The `fdroid` flavor does not include ML Kit. Third-party
 components keep their own licenses; the list is in the app, under Settings > About.
