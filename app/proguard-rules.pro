@@ -19,3 +19,16 @@
 # ML Kit finds its components by reflection (registrar classes named in the manifest). R8 removed their
 # constructors too, so RemoteModelManager got nothing and handwriting to text crashed.
 -keep class * implements com.google.firebase.components.ComponentRegistrar { <init>(); }
+
+# termlib keeps its screen state internal: TerminalTab reads it by reflection, to clear the pen strokes over
+# the terminal when the text scrolls. These names must survive the shrinking.
+-keepclassmembers class org.connectbot.terminal.TerminalEmulatorImpl { *** getSnapshot$lib(); }
+-keepclassmembers class org.connectbot.terminal.TerminalSnapshot {
+    *** getLines();
+    *** getScrollback();
+    int getRows();
+    int getCols();
+    boolean getAlternateScreen();
+}
+-keepclassmembers class org.connectbot.terminal.TerminalLine { java.lang.String getText(); }
+

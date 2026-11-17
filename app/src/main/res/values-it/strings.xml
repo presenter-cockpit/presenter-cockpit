@@ -17,6 +17,8 @@
     <string name="action_undo">Annulla</string>
     <string name="action_redo">Ripeti</string>
     <string name="action_clear_page">Cancella le annotazioni della pagina</string>
+    <string name="action_clear_tab_ink">Cancella i segni della scheda</string>
+    <string name="tool_unavailable_label">%1$s – non in questa scheda</string>
     <string name="action_move_up">Sposta su</string>
     <string name="action_move_down">Sposta giù</string>
 

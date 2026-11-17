@@ -34,6 +34,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
@@ -81,6 +82,17 @@ internal fun TerminalContent(session: PresenterSession, tab: TerminalTab, colors
             tab.originIn = origin
             onDispose { if (tab.originIn === origin) tab.originIn = null }
         }
+        // Pen strokes over the grid, as over the code: they go away as soon as the text scrolls, because of
+        // output (the screen is compared at every update), of a finger or of a new font size.
+        val codeInk = tab.codeInk
+        SideEffect {
+            if (codeInk.fontPx != fontPx) {
+                if (codeInk.fontPx > 0f) tab.clearInk()
+                codeInk.fontPx = fontPx
+            }
+        }
+        LaunchedEffect(tab) { tab.screens?.collect { tab.checkScreen() } }
+        LaunchedEffect(tab) { snapshotFlow { codeInk.version }.collect { tab.inkChanged() } }
         Box(
             Modifier
                 .weight(1f)
@@ -90,9 +102,12 @@ internal fun TerminalContent(session: PresenterSession, tab: TerminalTab, colors
                     tab.viewWidthPx = c.size.width.toFloat()
                     tab.viewHeightPx = c.size.height.toFloat()
                 }
+                .codeInkInput(session, codeInk) { Offset.Zero }
+                .clearInkOnScroll(tab) { fontPx * INK_SCROLL_LINES }
                 .pinchFontSize(session, tab)
                 .then(if (tab.usingTmux) Modifier.tmuxWheel(session, tab) else Modifier)
-                .clipToBounds(),
+                .clipToBounds()
+                .codeInkDrawing(codeInk) { Offset.Zero },
         ) {
             // termlib also selects with a double tap followed by a drag and after the system long press (~0.5 s):
             // scrolling in jerks or with a short pause before moving the finger selected text. Here: no double tap,
@@ -232,3 +247,28 @@ private const val TMUX_WHEEL_LINES = 5
 
 /** Finger held still on the terminal to start selecting text. */
 private const val TERMINAL_SELECT_MS = 800L
+
+/**
+ * A finger dragging over the terminal scrolls it (termlib, or tmux with [tmuxWheel]): past [distance] px the
+ * strokes over it go away. The touches are only watched, not consumed.
+ */
+private fun Modifier.clearInkOnScroll(tab: TerminalTab, distance: () -> Float): Modifier = pointerInput(tab) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        if (down.type != PointerType.Touch) return@awaitEachGesture
+        var moved = 0f
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+            moved += change.position.y - change.previousPosition.y
+            if (abs(moved) > distance()) {
+                tab.clearInk()
+                break
+            }
+            if (!change.pressed) break
+        }
+    }
+}
+
+/** Scroll that clears the strokes over the terminal, in font sizes (about half a line). */
+private const val INK_SCROLL_LINES = 0.6f

@@ -51,6 +51,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -67,6 +68,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.role
@@ -75,8 +77,11 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import it.presenter.app.R
 import it.presenter.app.session.PresenterSession
+import it.presenter.app.tabs.EditorTab
+import it.presenter.app.tabs.TerminalTab
 import it.presenter.app.tools.ToolEditorRequest
 import it.presenter.app.tools.ToolKind
+import it.presenter.app.tools.ToolPlace
 import it.presenter.app.tools.ToolPreset
 import it.presenter.app.tools.ToolRef
 import kotlinx.coroutines.delay
@@ -97,6 +102,14 @@ fun ToolRail(session: PresenterSession) {
     // Read to recompose undo/redo at every ink change.
     doc?.editCount
     val ink = doc?.let { it.inkOf(it.pageIndex) }
+    // On a code or terminal tab the strokes over its text (read to recompose when they change).
+    val onPage = session.toolPlace == ToolPlace.PAGE
+    val workInk = when (val w = session.activeWork) {
+        is EditorTab -> w.codeInk
+        is TerminalTab -> w.codeInk
+        else -> null
+    }
+    workInk?.version
     // Height (window px) of each button: its editor opens there.
     val anchors = remember { HashMap<ToolRef, Float>() }
 
@@ -138,6 +151,7 @@ fun ToolRail(session: PresenterSession) {
                     val ref = ToolRef.Preset(preset.id)
                     RailTool(
                         label = stringResource(kindLabel(preset.kind)),
+                        enabled = session.toolAllowed(ref),
                         selected = tools.inUse == ref,
                         dual = tools.dual == ref && tools.inUse != ref,
                         onAnchor = { anchors[ref] = it },
@@ -161,6 +175,7 @@ fun ToolRail(session: PresenterSession) {
             HorizontalDivider(Modifier.width(36.dp).padding(vertical = 4.dp))
             RailTool(
                 label = stringResource(R.string.tool_eraser),
+                enabled = session.toolAllowed(ToolRef.Eraser),
                 selected = tools.inUse == ToolRef.Eraser,
                 dual = tools.dual == ToolRef.Eraser && tools.inUse != ToolRef.Eraser,
                 onAnchor = { anchors[ToolRef.Eraser] = it },
@@ -179,6 +194,7 @@ fun ToolRail(session: PresenterSession) {
             }
             RailTool(
                 label = stringResource(R.string.tool_lasso),
+                enabled = session.toolAllowed(ToolRef.Lasso),
                 selected = tools.inUse == ToolRef.Lasso,
                 dual = tools.dual == ToolRef.Lasso && tools.inUse != ToolRef.Lasso,
                 onAnchor = { anchors[ToolRef.Lasso] = it },
@@ -197,6 +213,7 @@ fun ToolRail(session: PresenterSession) {
             }
             RailTool(
                 label = stringResource(R.string.tool_spotlight),
+                enabled = session.toolAllowed(ToolRef.Spotlight),
                 selected = tools.inUse == ToolRef.Spotlight,
                 dual = tools.dual == ToolRef.Spotlight && tools.inUse != ToolRef.Spotlight,
                 onAnchor = { anchors[ToolRef.Spotlight] = it },
@@ -214,14 +231,21 @@ fun ToolRail(session: PresenterSession) {
                 }
             }
             // Lasso clipboard: pasted on the current page (also in another document).
-            if (session.clipboard != null && doc != null) {
+            if (session.clipboard != null && doc != null && onPage) {
                 RailAction(Icons.Rounded.ContentPaste, stringResource(R.string.action_paste)) { session.paste() }
             }
             Spacer(Modifier.height(2.dp))
-            RailAction(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.action_undo), enabled = ink?.canUndo == true, usage = stringResource(R.string.usage_undo)) { session.undo() }
-            RailAction(Icons.AutoMirrored.Rounded.Redo, stringResource(R.string.action_redo), enabled = ink?.canRedo == true, usage = stringResource(R.string.usage_redo)) { session.redo() }
-            RailAction(Icons.Rounded.DeleteSweep, stringResource(R.string.action_clear_page), enabled = ink?.isEmpty == false) {
-                session.clearPage()
+            // Undo and redo are for the pages: the strokes over code and terminal stay out of them.
+            RailAction(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.action_undo), enabled = onPage && ink?.canUndo == true, usage = stringResource(R.string.usage_undo)) { session.undo() }
+            RailAction(Icons.AutoMirrored.Rounded.Redo, stringResource(R.string.action_redo), enabled = onPage && ink?.canRedo == true, usage = stringResource(R.string.usage_redo)) { session.redo() }
+            if (onPage) {
+                RailAction(Icons.Rounded.DeleteSweep, stringResource(R.string.action_clear_page), enabled = ink?.isEmpty == false) {
+                    session.clearPage()
+                }
+            } else {
+                RailAction(Icons.Rounded.DeleteSweep, stringResource(R.string.action_clear_tab_ink), enabled = workInk?.let { !it.ink.isEmpty } == true) {
+                    session.clearPage()
+                }
             }
         }
         // Composed here: the popup is positioned relative to the rail.
@@ -242,6 +266,7 @@ fun ToolRail(session: PresenterSession) {
 private fun RailTool(
     label: String,
     selected: Boolean,
+    enabled: Boolean = true,
     dual: Boolean,
     onAnchor: (Float) -> Unit,
     onTap: () -> Unit,
@@ -254,6 +279,9 @@ private fun RailTool(
     val haptics = LocalHapticFeedback.current
     val currentTap by rememberUpdatedState(onTap)
     val currentHold by rememberUpdatedState(onHold)
+    val currentEnabled by rememberUpdatedState(enabled)
+    // Not usable here: grey, with the reason in the tooltip, and taps do nothing.
+    val shownLabel = if (enabled) label else stringResource(R.string.tool_unavailable_label, label)
     val dualLabel = stringResource(R.string.tool_dual)
     val holdHint = stringResource(R.string.tool_hold_hint)
     val tooltip = rememberTooltipState()
@@ -262,7 +290,7 @@ private fun RailTool(
     LaunchedEffect(hovered) { if (hovered) tooltip.show() else tooltip.dismiss() }
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
-        tooltip = { PlainTooltip { TooltipText(label, if (dual) dualLabel else holdHint) } },
+        tooltip = { PlainTooltip { TooltipText(shownLabel, if (!enabled) null else if (dual) dualLabel else holdHint) } },
         state = tooltip,
         enableUserInput = false,
     ) {
@@ -273,15 +301,20 @@ private fun RailTool(
                 .onGloballyPositioned { onAnchor(it.boundsInWindow().top) }
                 .hoverable(interactions)
                 .semantics {
-                    contentDescription = label
+                    contentDescription = shownLabel
                     role = Role.Button
                     if (dual) stateDescription = dualLabel
-                    onClick { currentTap(); true }
-                    onLongClick(holdHint) { currentHold(); true }
+                    if (enabled) {
+                        onClick { currentTap(); true }
+                        onLongClick(holdHint) { currentHold(); true }
+                    } else {
+                        disabled()
+                    }
                 }
                 .pointerInput(Unit) {
                     awaitEachGesture {
                         awaitFirstDown()
+                        if (!currentEnabled) return@awaitEachGesture
                         var held = false
                         val job = scope.launch {
                             // A short wait: normal taps do not make the ring flash.
@@ -311,7 +344,8 @@ private fun RailTool(
                     }
                 }
                 .border(2.5.dp, if (selected) colors.primary else Color.Transparent, CircleShape)
-                .padding(5.dp),
+                .padding(5.dp)
+                .alpha(if (enabled) 1f else DISABLED_ALPHA),
         ) {
             content()
             if (dual) {
@@ -353,6 +387,9 @@ private fun RailAction(icon: ImageVector, description: String, enabled: Boolean 
         }
     }
 }
+
+/** Tools that cannot be used where the pen is (as the disabled icons of Material). */
+private const val DISABLED_ALPHA = 0.38f
 
 /** Rail sizes (compact: with larger sizes a few presets filled it). */
 private val RAIL_WIDTH = 60.dp

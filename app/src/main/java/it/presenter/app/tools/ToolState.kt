@@ -14,7 +14,8 @@ import it.presenter.app.settings.Prefs
  * itself), also read by the drawing surface when a stroke starts.
  *
  * [selected] is the tool chosen in the rail. Every tool has its dual, used while holding the S Pen
- * button (the eraser, unless the user picks another one): [dual] is the dual of the selected tool.
+ * button (the eraser, unless the user picks another one): [dual] is the dual of the tool the user chose,
+ * the same on pages, code and terminal (see [dualOwner]).
  */
 class ToolState(private val prefs: Prefs) {
     val presets = mutableStateListOf<ToolPreset>().apply {
@@ -34,8 +35,24 @@ class ToolState(private val prefs: Prefs) {
 
     fun dualOf(tool: ToolRef): ToolRef = duals[tool] ?: ToolRef.defaultDual
 
-    /** Dual of the selected tool. */
-    val dual: ToolRef get() = dualOf(selected)
+    /**
+     * Tool the user chose, when the app put the laser in its place on a tab where it cannot be used (see
+     * `PresenterSession.adaptTool`): its dual stays in use, so the pen button does the same everywhere
+     * (user's request). Null when [selected] is the user's choice.
+     */
+    var dualOwner: ToolRef? by mutableStateOf(null)
+        private set
+
+    private val owner: ToolRef get() = dualOwner ?: selected
+
+    /** Dual of the tool the user chose. */
+    val dual: ToolRef get() = dualOf(owner)
+
+    /**
+     * True for the tools usable where the pen is now (set by the session): a dual that is not usable there
+     * is ignored, and the pen button does nothing.
+     */
+    var usable: (ToolRef) -> Boolean = { true }
 
     /** S Pen button held (pen near the screen): [dual] is in use now. */
     var buttonHeld by mutableStateOf(false)
@@ -75,12 +92,23 @@ class ToolState(private val prefs: Prefs) {
     /** Preset [ref] points to, or null (fixed tool, or deleted preset). */
     fun preset(ref: ToolRef): ToolPreset? = (ref as? ToolRef.Preset)?.let { r -> presets.firstOrNull { it.id == r.id } }
 
-    /** Tool of a pen gesture (see [ToolRef.effective]). */
-    fun effective(buttonPressed: Boolean, eraserTip: Boolean): ToolRef =
-        ToolRef.effective(selected, dual, buttonPressed, eraserTip, buttonDoubleClick)
+    /**
+     * Tool of a pen gesture (see [ToolRef.effective]). With the pen button, a tool that cannot be used here
+     * counts as if the button were not pressed.
+     */
+    fun effective(buttonPressed: Boolean, eraserTip: Boolean): ToolRef {
+        val ref = ToolRef.effective(selected, dual, buttonPressed, eraserTip, buttonDoubleClick)
+        return if (buttonPressed && !eraserTip && !usable(ref)) selected else ref
+    }
 
-    fun select(ref: ToolRef) {
-        selected = valid(ref) ?: return
+    /**
+     * Selects [ref]. [dualFrom]: the user's tool whose dual stays in use, when the app selects [ref] in its
+     * place (see [dualOwner]); null for a choice of the user.
+     */
+    fun select(ref: ToolRef, dualFrom: ToolRef? = null) {
+        val tool = valid(ref) ?: return
+        selected = tool
+        dualOwner = dualFrom?.let(::valid)?.takeIf { it != tool }
         prefs.selectedTool = selected.encode()
         if (ref is ToolRef.Preset) prefs.lastPresetId = ref.id
         if (preset(selected)?.kind == ToolKind.LASER) prefs.lastLaserId = (selected as ToolRef.Preset).id
@@ -101,12 +129,13 @@ class ToolState(private val prefs: Prefs) {
     }
 
     /**
-     * [ref] becomes the dual of the selected tool. Choosing the tool itself (or the eraser) goes back to
-     * the default dual.
+     * [ref] becomes the dual of the tool the user chose (see [dualOwner]). Choosing the tool itself (or the
+     * eraser) goes back to the default dual.
      */
     fun setDualOfSelected(ref: ToolRef) {
         val tool = valid(ref) ?: return
-        if (tool == selected || tool == ToolRef.defaultDual) duals.remove(selected) else duals[selected] = tool
+        val of = owner
+        if (tool == of || tool == ToolRef.defaultDual) duals.remove(of) else duals[of] = tool
         persistDuals()
     }
 

@@ -1,9 +1,6 @@
 package it.presenter.app.ui
 
-import android.graphics.Canvas
-import android.graphics.Matrix
 import android.os.Build
-import android.os.SystemClock
 import android.text.InputType
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -83,14 +80,11 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -130,12 +124,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.ink.brush.InputToolType
-import androidx.ink.rendering.android.canvas.CanvasStrokeRenderer
-import androidx.ink.strokes.ImmutableStrokeInputBatch
-import androidx.ink.strokes.InProgressStroke
-import androidx.ink.strokes.MutableStrokeInputBatch
-import androidx.ink.strokes.StrokeInput
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -144,16 +132,10 @@ import it.presenter.app.code.Highlighter
 import it.presenter.app.code.TextFind
 import it.presenter.app.describe
 import it.presenter.app.files.TreeFiles
-import it.presenter.app.ink.BrushFamilies
-import it.presenter.app.ink.ElementPainter
-import it.presenter.app.ink.InkStroke
 import it.presenter.app.session.PresenterSession
-import it.presenter.app.tabs.CodeInk
 import it.presenter.app.tabs.EditorTab
 import it.presenter.app.tabs.LocalShell
 import it.presenter.app.tabs.OpenFile
-import it.presenter.app.tools.ToolKind
-import it.presenter.app.tools.ToolRef
 import kotlin.math.abs
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
@@ -687,123 +669,6 @@ private fun Modifier.rejectPalm(session: PresenterSession): Modifier = pointerIn
         }
     }
 }
-
-/**
- * Pen over the code (pen, marker, highlighter with their brush, and eraser): the S Pen is taken before the
- * editor (Initial pass). Widths as on the pages: the width of the box counts as 1000 page units. Laser,
- * shapes, text and lasso do not write here.
- */
-private fun Modifier.codeInkInput(session: PresenterSession, ci: CodeInk, origin: () -> Offset): Modifier = pointerInput(ci) {
-    val batch = MutableStrokeInputBatch()
-    var erasing = false
-    var lastX = 0f
-    var lastY = 0f
-    awaitPointerEventScope {
-        while (true) {
-            val event = awaitPointerEvent(PointerEventPass.Initial)
-            val change = event.changes.firstOrNull() ?: continue
-            val eraserTip = change.type == PointerType.Eraser
-            if (change.type != PointerType.Stylus && !eraserTip) continue
-            if (!change.pressed && !change.previousPressed) continue
-            val tools = session.tools
-            // Side button: MainActivity follows it from the raw events (it does not always arrive here).
-            val buttons = session.tools.buttonHeld || event.buttons.isSecondaryPressed
-            val ref = tools.effective(buttonPressed = buttons, eraserTip = eraserTip)
-            val preset = tools.preset(ref)
-            val inkTool = preset != null && preset.kind in CODE_INK_KINDS
-            val k = size.width / 1000f
-            val o = origin()
-            val x = change.position.x - o.x
-            val y = change.position.y - o.y
-            val starting = change.pressed && !change.previousPressed
-            if (starting) {
-                erasing = ref == ToolRef.Eraser
-                if (!erasing && !inkTool) continue
-                if (erasing) {
-                    ci.ink.beginChange()
-                    lastX = x
-                    lastY = y
-                } else {
-                    val brush = BrushFamilies.brushFor(preset!!.copy(size = preset.size * k)) ?: continue
-                    ci.live = InProgressStroke().apply { start(brush) }
-                    ci.liveDown = change.uptimeMillis
-                }
-            } else if (!erasing && ci.live == null) {
-                continue
-            }
-            if (erasing) {
-                if (ci.ink.eraseAlong(lastX, lastY, x, y, tools.eraserSize * k, tools.eraseMode)) ci.changed()
-                lastX = x
-                lastY = y
-                if (!change.pressed) {
-                    ci.ink.endChange()
-                    erasing = false
-                    ci.changed()
-                }
-            } else {
-                val live = ci.live!!
-                batch.clear()
-                val unitCm = 2.54f / (160f * density)
-                val points = if (starting) emptyList() else change.historical.map { it.position to it.uptimeMillis }
-                for ((p, t) in points + (change.position to change.uptimeMillis)) {
-                    runCatching {
-                        batch.add(
-                            InputToolType.STYLUS, p.x - o.x, p.y - o.y, t - ci.liveDown, unitCm,
-                            change.pressure.coerceIn(0f, 1f), StrokeInput.NO_TILT, StrokeInput.NO_ORIENTATION,
-                        )
-                    }
-                }
-                runCatching { live.enqueueInputs(batch, ImmutableStrokeInputBatch.EMPTY) }
-                if (!change.pressed) {
-                    runCatching {
-                        live.finishInput()
-                        live.updateShape(change.uptimeMillis - ci.liveDown)
-                        ci.ink.add(listOf(InkStroke(live.toImmutable())))
-                    }
-                    ci.live = null
-                }
-                ci.changed()
-            }
-            change.consume()
-        }
-    }
-}
-
-/** Draws the strokes over the code, in the same frame as the text. */
-@Composable
-private fun Modifier.codeInkDrawing(ci: CodeInk, origin: () -> Offset): Modifier {
-    val painter = remember { ElementPainter() }
-    val liveRenderer = remember { CanvasStrokeRenderer.create() }
-    return drawWithContent {
-        drawContent()
-        ci.version
-        val o = origin()
-        val m = Matrix().apply { setTranslate(o.x, o.y) }
-        drawIntoCanvas { c -> drawCodeInk(c.nativeCanvas, ci, m, painter, liveRenderer) }
-    }
-}
-
-/** Strokes of [ci] with [toScreen] (from the editor content to the screen); tablet and projector. */
-internal fun drawCodeInk(
-    canvas: Canvas,
-    ci: CodeInk,
-    toScreen: Matrix,
-    painter: ElementPainter,
-    liveRenderer: CanvasStrokeRenderer,
-) {
-    val live = ci.live
-    if (ci.ink.isEmpty && live == null) return
-    canvas.save()
-    canvas.concat(toScreen)
-    painter.draw(canvas, ci.ink.elements, toScreen)
-    if (live != null) {
-        runCatching { live.updateShape(SystemClock.uptimeMillis() - ci.liveDown) }
-        liveRenderer.draw(canvas, live, toScreen)
-    }
-    canvas.restore()
-}
-
-private val CODE_INK_KINDS = setOf(ToolKind.PEN, ToolKind.MARKER, ToolKind.HIGHLIGHTER)
 
 internal const val LINE_HEIGHT = 1.35f
 

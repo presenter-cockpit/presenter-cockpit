@@ -165,7 +165,27 @@ fun ProjectorWorkContent(session: PresenterSession, tab: WorkTab) {
                     val gridW = if (fit > 0f) tab.viewWidthPx * terminalScale else area.width.toFloat()
                     val gridH = if (fit > 0f) tab.viewHeightPx * terminalScale else area.height.toFloat()
                     terminalOffset = Offset((area.width - gridW) / 2f, (area.height - gridH) / 2f)
-                    Box(Modifier.fillMaxSize().onSizeChanged { area = it }) {
+                    // Pen strokes from the tablet: from the corner of its grid, scaled like the font.
+                    val ci = tab.codeInk
+                    val inkScale = if (fit > 0f) terminalScale else 0f
+                    val inkOffset = terminalOffset
+                    val painter = remember { ElementPainter() }
+                    val liveRenderer = remember { CanvasStrokeRenderer.create() }
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .onSizeChanged { area = it }
+                            .drawWithContent {
+                                drawContent()
+                                ci.version
+                                if (inkScale <= 0f) return@drawWithContent
+                                val m = Matrix().apply {
+                                    setScale(inkScale, inkScale)
+                                    postTranslate(inkOffset.x, inkOffset.y)
+                                }
+                                drawIntoCanvas { c -> drawCodeInk(c.nativeCanvas, ci, m, painter, liveRenderer) }
+                            },
+                    ) {
                         key(font) {
                             Terminal(
                                 terminalEmulator = tab.emulator,

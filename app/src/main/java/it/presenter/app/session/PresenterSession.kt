@@ -62,6 +62,7 @@ import it.presenter.app.tabs.WorkTab
 import it.presenter.app.tabs.WorkTabStore
 import it.presenter.app.tools.ToolEditorRequest
 import it.presenter.app.tools.ToolKind
+import it.presenter.app.tools.ToolPlace
 import it.presenter.app.tools.ToolPreset
 import it.presenter.app.tools.ToolRef
 import it.presenter.app.tools.ToolState
@@ -504,28 +505,49 @@ class PresenterSession(context: Context) {
         notify(Change.PROJECTOR)
     }
 
-    /** Tool to restore when leaving a tab where you can only point (see [adaptTool]). */
+    /** Where the pen works now, and so which tools it can use (see [ToolPlace]). */
+    val toolPlace: ToolPlace
+        get() = when (activeWork) {
+            null -> ToolPlace.PAGE
+            is BrowserTab -> ToolPlace.WEB
+            else -> ToolPlace.CODE
+        }
+
+    /** True if [ref] can be used where the pen is now: the rail greys out the others. */
+    fun toolAllowed(ref: ToolRef): Boolean = toolPlace.allows(ref, tools.preset(ref)?.kind)
+
+    init {
+        // A pen button dual that cannot be used where the pen is gets ignored.
+        tools.usable = ::toolAllowed
+    }
+
+    /** Tool to restore when going back where it can be used (see [adaptTool]). */
     private var toolBeforePointer: ToolRef? = null
 
     /**
-     * On terminal and browser the pen does not draw: entering with a tool that is not a laser switches to the
-     * last laser used, and going back to a PDF or editor restores the previous tool (user's request). If a
-     * non-laser tool was picked by hand meanwhile, that one stays.
+     * Entering a tab where the selected tool cannot be used (shapes on code, the pen on a web page) switches to
+     * the last laser used, which works everywhere; going back where the previous tool works restores it (user's
+     * request). If another tool was picked by hand meanwhile, that one stays.
      */
     private fun adaptTool(tab: WorkTab?) {
-        val pointerOnly = tab is TerminalTab || tab is BrowserTab
-        val isLaser = tools.preset(tools.selected)?.kind == ToolKind.LASER
-        if (pointerOnly) {
-            if (toolBeforePointer == null && !isLaser) {
-                val laser = tools.lastLaser() ?: return
-                toolBeforePointer = tools.selected
-                tools.select(laser)
-            }
-        } else {
-            val before = toolBeforePointer ?: return
-            toolBeforePointer = null
-            if (isLaser) tools.select(before)
+        val place = when (tab) {
+            null -> ToolPlace.PAGE
+            is BrowserTab -> ToolPlace.WEB
+            else -> ToolPlace.CODE
         }
+        val selected = tools.selected
+        val isLaser = tools.preset(selected)?.kind == ToolKind.LASER
+        if (!place.allows(selected, tools.preset(selected)?.kind)) {
+            val laser = tools.lastLaser() ?: return
+            if (toolBeforePointer == null) toolBeforePointer = selected
+            // The pen button keeps the dual of the user's tool.
+            tools.select(laser, dualFrom = toolBeforePointer)
+            return
+        }
+        val before = toolBeforePointer ?: return
+        if (!place.allows(before, tools.preset(before)?.kind)) return
+        toolBeforePointer = null
+        if (isLaser) tools.select(before)
     }
 
     /** Back to the PDFs (the PDF tab [current], if any). */
@@ -1236,6 +1258,8 @@ class PresenterSession(context: Context) {
     fun undo() {
         endTextEdit()
         selection = null
+        // The strokes over code and terminal stay out of undo/redo: the page behind must not change.
+        if (activeWork != null) return
         val doc = current ?: return
         if (doc.inkOf(doc.pageIndex).undo()) onInkEdited(doc)
     }
@@ -1243,6 +1267,8 @@ class PresenterSession(context: Context) {
     fun redo() {
         endTextEdit()
         selection = null
+        // The strokes over code and terminal stay out of undo/redo: the page behind must not change.
+        if (activeWork != null) return
         val doc = current ?: return
         if (doc.inkOf(doc.pageIndex).redo()) onInkEdited(doc)
     }
@@ -1250,6 +1276,13 @@ class PresenterSession(context: Context) {
     fun clearPage() {
         endTextEdit()
         selection = null
+        // On code and terminal the same button clears the strokes over the text.
+        when (val work = activeWork) {
+            is EditorTab -> return work.codeInk.clear()
+            is TerminalTab -> return work.clearInk()
+            is BrowserTab -> return
+            null -> {}
+        }
         val doc = current ?: return
         val ink = doc.inkOf(doc.pageIndex)
         if (ink.isEmpty && ink.fading.isEmpty()) return

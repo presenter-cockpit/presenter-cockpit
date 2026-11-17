@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.StateFlow
 import org.connectbot.terminal.ModifierManager
 import org.connectbot.terminal.TerminalEmulator
 import org.connectbot.terminal.TerminalEmulatorFactory
@@ -66,6 +67,73 @@ class TerminalTab(val server: ServerProfile?, knownHosts: File, id: String? = nu
 
     /** Top-left corner of the grid in the coordinates of `ref` (to anchor the laser to it). */
     var originIn: ((ref: LayoutCoordinates) -> Offset?)? = null
+
+    /**
+     * Pen strokes over the terminal, in tablet pixels from the corner of the grid. As over the code, they are
+     * tied to the visible lines: they disappear as soon as the text scrolls (see [checkScreen]).
+     */
+    val codeInk = CodeInk()
+
+    /** What the terminal showed when it was last checked, while there are strokes (null without). */
+    private var shownMark: ScreenMark? = null
+
+    /**
+     * The emulator's screen, as a flow that changes at every update. termlib keeps it internal (it feeds its
+     * own view), so it is read by reflection (see [readMark]; names kept in `proguard-rules.pro`). Without it
+     * the strokes still go away when scrolling with the finger or changing font, but not when output scrolls
+     * the text.
+     */
+    val screens: StateFlow<*>? by lazy {
+        runCatching { emulator.javaClass.getMethod("getSnapshot\$lib").invoke(emulator) as StateFlow<*> }.getOrNull()
+    }
+
+    /**
+     * Compares the screen with the one seen at the previous check and clears the strokes if the text scrolled
+     * (see [ScreenMark.movedTo]). Called at every screen update; nothing to do without strokes.
+     */
+    fun checkScreen() {
+        if (!hasInk()) {
+            shownMark = null
+            return
+        }
+        val now = screens?.value?.let(::readMark) ?: return
+        val before = shownMark
+        shownMark = now
+        if (before != null && before.movedTo(now)) clearInk()
+    }
+
+    /** At every change of the strokes: the first one takes the screen it was drawn on as reference. */
+    fun inkChanged() {
+        if (!hasInk()) shownMark = null
+        else if (shownMark == null) shownMark = screens?.value?.let(::readMark)
+    }
+
+    private fun hasInk() = !codeInk.ink.isEmpty || codeInk.live != null
+
+    /** Clears the strokes (the text was scrolled by hand or the font changed). */
+    fun clearInk() {
+        codeInk.clear()
+        shownMark = null
+    }
+
+    /** Getters found by reflection, kept: the screen is read at every update while there are strokes. */
+    private val getters = HashMap<Pair<Class<*>, String>, java.lang.reflect.Method>()
+
+    private fun getter(type: Class<*>, name: String) = getters.getOrPut(type to name) { type.getMethod(name) }
+
+    /** [ScreenMark] of a termlib snapshot (its getters, by reflection); null if they are not there. */
+    private fun readMark(snapshot: Any?): ScreenMark? = runCatching {
+        val s = snapshot ?: return null
+        fun get(name: String): Any? = getter(s.javaClass, name).invoke(s)
+        val lines = (get("getLines") as List<*>).map { line -> line?.let { getter(it.javaClass, "getText").invoke(it) } as? String ?: "" }
+        ScreenMark(
+            rows = get("getRows") as Int,
+            cols = get("getCols") as Int,
+            alternate = get("getAlternateScreen") as Boolean,
+            scrollback = (get("getScrollback") as List<*>).size,
+            lines = lines,
+        )
+    }.getOrNull()
 
     @Volatile
     private var channel: ChannelExec? = null
