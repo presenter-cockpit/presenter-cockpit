@@ -1,0 +1,1 @@
+Pen, marker, highlighter and eraser on the terminal too: the strokes go away when the text scrolls. Tools that do not work in a tab are greyed out, and the pen button keeps the same dual in every tab. Strokes over the code are no longer lost when lifting the pen.

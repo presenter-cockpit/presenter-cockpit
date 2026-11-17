@@ -1,0 +1,1 @@
+Penna, pennarello, evidenziatore e gomma anche sul terminale: i segni spariscono quando il testo scorre. Gli strumenti che non funzionano in una scheda sono in grigio, e il tasto della penna ha lo stesso duale in tutte le schede. I tratti sul codice non si perdono più alzando la penna.
